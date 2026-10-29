@@ -1,0 +1,33 @@
+# Secrets - never commit these
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Data and model files (too large / not redistributable)
+data/
+*.csv.zip
+*.pt
+*.pth
+*.ckpt
+
+# Runtime logs and local state
+*.log
+.DS_Store
+
+# Node
+node_modules/
+dist/
+
+# AXIOGENESIS local state (database, neural weights)
+axiogenesis.db
+axiogenesis.db-shm
+axiogenesis.db-wal
+*.db
+axio_model.pt

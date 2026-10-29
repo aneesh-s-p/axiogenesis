@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXIOGENESIS v3 · Cognitive Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&family=Syne:wght@400;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ══ VARIABLES ═══════════════════════════════════════════════════════ */
+:root{
+  --bg:#02040a;--sf:#040810;--bo:#0d1525;
+  --fg:#1a2840;--dm:#1e2e50;--ac:#2040a0;
+  --font:'Fira Code',monospace;--hfont:'Fira Code',monospace;
+  --ofont:'Syne',sans-serif;--tsz:11px;--brad:2px;
+  --glow:#1a3080;--dim:#0a1228;
+  --pulse-a:#2040a0;--pulse-b:#102060;
+  --c-survival:#ff4444;--c-resource:#44ff88;--c-security:#ff8844;
+  --c-growth:#4488ff;--c-curiosity:#44ffee;--c-evolution:#cc44ff;
+  --c-interaction:#ff88cc;--c-homeostasis:#44ccbb;--c-hunger:#ffcc44;
+  --c-repair:#88ff44;--c-mimicry:#ff44cc;
+  --status-online:#44ff88;--status-offline:#ff4444;--status-syncing:#ffcc44;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:#02040a;}
+
+/* ══ BOOT ══════════════════════════════════════════════════════════ */
+#boot{
+  position:fixed;inset:0;background:#02040a;z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;padding:40px;
+}
+#boot-logo{
+  font-family:'Syne',sans-serif;font-size:clamp(14px,3vw,34px);
+  color:#fff;letter-spacing:10px;font-weight:800;
+  opacity:0;animation:fadeUp 1s .3s forwards;
+}
+#boot-ver{font-family:'Fira Code',monospace;font-size:9px;color:#1a3060;
+  letter-spacing:4px;opacity:0;animation:fadeUp .8s 1s forwards;}
+#boot-line{width:0;height:1px;background:linear-gradient(90deg,transparent,#1a3060,transparent);
+  animation:lineGrow 1.2s 1.8s forwards;margin:6px 0;}
+#boot-form{
+  display:flex;flex-direction:column;gap:8px;
+  opacity:0;animation:fadeUp .8s 2s forwards;
+  width:100%;max-width:420px;
+}
+.boot-label{font-family:'Fira Code',monospace;font-size:8px;color:#1e2e50;
+  letter-spacing:2px;text-transform:uppercase;}
+#apiKeyInput,#backendUrlInput{
+  width:100%;background:transparent;border:1px solid #0d1525;color:#4060a0;
+  padding:8px 12px;font-family:'Fira Code',monospace;font-size:11px;
+  outline:none;letter-spacing:1px;border-radius:2px;transition:border-color .3s;
+}
+#apiKeyInput:focus,#backendUrlInput:focus{border-color:#1a3060;}
+#apiKeyInput::placeholder,#backendUrlInput::placeholder{color:#0d1525;}
+.boot-btn{
+  background:transparent;border:1px solid #0d1525;color:#2040a0;
+  padding:8px 16px;font-family:'Fira Code',monospace;font-size:8px;
+  letter-spacing:2px;cursor:pointer;transition:all .25s;border-radius:2px;width:100%;
+}
+.boot-btn:hover{border-color:#2040a0;color:#6080d0;}
+.boot-btn.primary{border-color:#1a3060;color:#4060a0;}
+.boot-btn.primary:hover{border-color:#4060a0;color:#a0c0ff;}
+#boot-status{font-family:'Fira Code',monospace;font-size:8px;color:#1a3060;
+  text-align:center;opacity:0;animation:fadeUp .8s 2.6s forwards;}
+
+/* ══ BACKGROUND ══════════════════════════════════════════════════ */
+#bg-canvas{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.4;}
+
+/* ══ APP ═════════════════════════════════════════════════════════ */
+#app{
+  position:relative;z-index:1;height:100vh;
+  display:flex;flex-direction:column;
+  background:var(--bg);color:var(--fg);
+  font-family:var(--font);font-size:var(--tsz);
+  opacity:0;transition:opacity 1s;
+}
+
+/* ══ HEADER ══════════════════════════════════════════════════════ */
+#header{
+  flex-shrink:0;padding:0 12px;height:52px;
+  display:flex;align-items:center;gap:8px;
+  background:var(--sf);border-bottom:1px solid var(--bo);
+  position:relative;overflow:hidden;
+}
+#header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--glow),transparent);opacity:.4;
+}
+.logo-wrap{flex-shrink:0;}
+#logo{font-family:'Syne',sans-serif;font-size:13px;letter-spacing:5px;
+  color:var(--ac);font-weight:800;}
+#logo-sub{font-size:7px;color:var(--dm);letter-spacing:2px;margin-top:1px;}
+
+/* Backend connection badge */
+#conn-badge{
+  font-size:7px;padding:2px 6px;border-radius:2px;letter-spacing:1px;
+  border:1px solid;transition:all .5s;flex-shrink:0;
+  display:flex;align-items:center;gap:4px;
+}
+#conn-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+#conn-badge.online{border-color:#44ff88;color:#44ff88;}
+#conn-badge.online #conn-dot{background:#44ff88;box-shadow:0 0 6px #44ff88;}
+#conn-badge.offline{border-color:#ff4444;color:#ff4444;}
+#conn-badge.offline #conn-dot{background:#ff4444;}
+#conn-badge.syncing{border-color:#ffcc44;color:#ffcc44;}
+#conn-badge.syncing #conn-dot{background:#ffcc44;animation:pulse 1s infinite;}
+
+.metric-row{display:flex;gap:4px;align-items:center;flex-wrap:wrap;flex:1;justify-content:center;}
+.mchip{font-size:8px;color:var(--dm);border:1px solid var(--bo);
+  padding:2px 5px;border-radius:2px;letter-spacing:.3px;white-space:nowrap;}
+.ctrl-row{display:flex;gap:3px;align-items:center;flex-shrink:0;}
+.cbtn{
+  background:transparent;border:1px solid var(--bo);color:var(--dm);
+  padding:3px 8px;font-size:8px;cursor:pointer;font-family:var(--font);
+  letter-spacing:.5px;border-radius:var(--brad);white-space:nowrap;
+}
+.cbtn:hover{border-color:var(--ac);color:var(--ac);}
+.cbtn:disabled{opacity:.2;cursor:default;}
+
+/* Progress ring */
+#ring-wrap{position:relative;width:30px;height:30px;flex-shrink:0;}
+#ring-svg{transform:rotate(-90deg);}
+#ring-fill{fill:none;stroke:var(--ac);stroke-width:2;stroke-linecap:round;
+  stroke-dasharray:75;stroke-dashoffset:75;transition:stroke-dashoffset 1.5s;}
+#ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--ofont);font-size:6px;color:var(--dm);}
+
+/* ══ INSTINCT STRIP ══════════════════════════════════════════════ */
+#instinct-strip{
+  flex-shrink:0;height:26px;padding:0 12px;
+  display:flex;align-items:center;gap:6px;
+  border-bottom:1px solid var(--bo);background:var(--sf);overflow:hidden;
+}
+#istrip-label{font-size:7px;color:var(--dm);letter-spacing:2px;white-space:nowrap;flex-shrink:0;}
+.drive-dot-wrap{display:flex;flex-direction:column;align-items:center;gap:1px;cursor:default;}
+.drive-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--bo);border:1px solid var(--bo);
+  transition:background .4s,border-color .4s,box-shadow .4s;
+}
+.drive-dot.firing{animation:drivePulse .8s ease-in-out;}
+.drive-label-tiny{font-size:6px;color:var(--dm);letter-spacing:.2px;text-align:center;}
+.drive-sep{width:1px;height:14px;background:var(--bo);flex-shrink:0;}
+
+/* ══ TICKER ══════════════════════════════════════════════════════ */
+#ticker{
+  font-size:8px;padding:2px 12px;color:var(--ac);opacity:.5;
+  font-style:italic;letter-spacing:.4px;min-height:14px;flex-shrink:0;
+  border-bottom:1px solid var(--bo);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+
+/* ══ NEURAL BAR ══════════════════════════════════════════════════ */
+#nbar{height:16px;padding:0 12px;display:flex;align-items:center;gap:12px;
+  flex-shrink:0;border-bottom:1px solid var(--bo);overflow:hidden;}
+.ns{font-size:7px;color:var(--dm);letter-spacing:.3px;white-space:nowrap;}
+
+/* ══ PROGRESS BAR ════════════════════════════════════════════════ */
+#ptrak{height:1px;background:var(--bo);flex-shrink:0;}
+#pfill{height:100%;width:0%;background:var(--ac);transition:width 1.2s;box-shadow:0 0 4px var(--glow);}
+
+/* ══ MAIN GRID ═══════════════════════════════════════════════════ */
+#main{
+  flex:1;display:grid;
+  grid-template-columns:0px 1fr 0px 0px 0px;
+  transition:grid-template-columns 1.2s;
+  overflow:hidden;min-height:0;
+}
+body.s1 #main{grid-template-columns:0px 1fr 240px 0px 0px;}
+body.s2 #main{grid-template-columns:0px 1fr 240px 0px 0px;}
+body.s3 #main{grid-template-columns:220px 1fr 240px 0px 0px;}
+body.s4 #main,body.s5 #main,body.s6 #main{
+  grid-template-columns:220px 1fr 240px 200px 200px;
+}
+
+/* ══ PANELS ══════════════════════════════════════════════════════ */
+.panel{
+  border-right:1px solid var(--bo);overflow:hidden;
+  display:flex;flex-direction:column;background:var(--sf);
+}
+.panel:last-child{border-right:none;border-left:1px solid var(--bo);}
+.panel-title{
+  font-size:7px;color:var(--dm);letter-spacing:2px;padding:5px 8px;
+  border-bottom:1px solid var(--bo);flex-shrink:0;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.panel-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px;}
+.panel-body::-webkit-scrollbar{width:2px;}
+.panel-body::-webkit-scrollbar-thumb{background:var(--bo);}
+.sub-panel{border-bottom:1px solid var(--bo);flex-shrink:0;}
+.sub-panel-body{padding:6px;overflow-y:auto;max-height:100px;}
+
+/* ══ CHAT ════════════════════════════════════════════════════════ */
+#panel-chat{background:var(--bg);border:none;}
+#messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;
+  gap:8px;scroll-behavior:smooth;}
+#messages::-webkit-scrollbar{width:2px;}
+#messages::-webkit-scrollbar-thumb{background:var(--bo);}
+.msg-user{
+  align-self:flex-end;
+  background:color-mix(in srgb,var(--ac) 15%,transparent);
+  border:1px solid color-mix(in srgb,var(--ac) 20%,transparent);
+  color:var(--fg);padding:7px 11px;border-radius:8px 8px 2px 8px;
+  max-width:70%;font-size:11px;line-height:1.6;white-space:pre-wrap;
+  animation:msgIn .3s ease;
+}
+.msg-ai{
+  align-self:flex-start;background:var(--sf);border:1px solid var(--bo);
+  color:var(--fg);padding:8px 12px;border-radius:2px 8px 8px 8px;
+  max-width:80%;font-size:11px;line-height:1.8;white-space:pre-wrap;word-break:break-word;
+  box-shadow:0 0 12px color-mix(in srgb,var(--glow) 8%,transparent);
+  animation:msgIn .3s ease;
+}
+.msg-sys{
+  align-self:center;color:var(--ac);font-size:8px;letter-spacing:1.5px;
+  opacity:.5;font-style:italic;padding:2px 0;text-align:center;
+}
+.msg-instinct{
+  align-self:flex-start;border-left:2px solid;padding:4px 8px;
+  font-size:8px;line-height:1.6;max-width:80%;
+  border-radius:0 3px 3px 0;background:color-mix(in srgb,var(--sf) 80%,transparent);
+  opacity:.65;
+}
+.msg-think{
+  align-self:flex-start;color:var(--ac);font-size:8px;opacity:.35;
+  font-style:italic;padding:0 3px;animation:pulse 1.6s infinite;
+}
+#iarea{
+  border-top:1px solid var(--bo);padding:8px 12px;display:flex;gap:6px;
+  background:var(--sf);flex-shrink:0;
+}
+#inp{
+  flex:1;background:var(--bg);border:1px solid var(--bo);color:var(--fg);
+  padding:6px 10px;font-family:var(--font);font-size:11px;outline:none;resize:none;
+  height:34px;border-radius:var(--brad);caret-color:var(--ac);line-height:1.5;
+}
+#inp::placeholder{color:var(--dm);opacity:.5;}
+#sbtn{
+  background:color-mix(in srgb,var(--ac) 18%,transparent);
+  border:1px solid color-mix(in srgb,var(--ac) 25%,transparent);
+  color:var(--ac);padding:6px 14px;font-family:var(--font);font-size:10px;
+  cursor:pointer;border-radius:var(--brad);flex-shrink:0;letter-spacing:.5px;
+}
+#sbtn:disabled{opacity:.15;cursor:default;}
+
+/* ══ KG CANVAS ═══════════════════════════════════════════════════ */
+#kg-canvas{width:100%;height:120px;display:block;}
+
+/* ══ KNOWLEDGE ITEMS ═════════════════════════════════════════════ */
+.belief-item{margin-bottom:4px;padding:4px 6px;border:1px solid var(--bo);border-radius:var(--brad);}
+.belief-text{font-size:8px;color:var(--fg);line-height:1.5;}
+.belief-bar{height:2px;background:var(--bo);margin-top:3px;border-radius:1px;overflow:hidden;}
+.belief-fill{height:100%;background:var(--ac);transition:width 1s;}
+.belief-conf{font-size:7px;color:var(--dm);margin-top:2px;}
+.triple-item{font-size:8px;color:var(--dm);padding:2px 0;border-bottom:1px solid var(--bo);line-height:1.5;}
+.triple-item span{color:var(--ac);}
+
+/* ══ RIGHT PANEL ══════════════════════════════════════════════════ */
+.stat-row{display:flex;justify-content:space-between;align-items:center;
+  padding:2px 0;border-bottom:1px solid var(--bo);}
+.stat-label{font-size:7px;color:var(--dm);letter-spacing:.4px;}
+.stat-val{font-family:var(--ofont);font-size:8px;color:var(--ac);}
+.research-item{font-size:8px;color:var(--dm);padding:4px 0;border-bottom:1px solid var(--bo);line-height:1.5;}
+.research-src{font-size:7px;color:var(--ac);opacity:.6;margin-top:1px;}
+.reflect-item{font-size:8px;color:var(--dm);padding:3px 0;border-bottom:1px solid var(--bo);
+  line-height:1.5;font-family:var(--hfont);}
+
+/* ══ INSTINCT PANEL ══════════════════════════════════════════════ */
+.drive-row{
+  display:flex;flex-direction:column;padding:5px 8px;
+  border-bottom:1px solid var(--bo);flex-shrink:0;
+  position:relative;overflow:hidden;transition:background .4s;
+}
+.drive-row::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .6s;}
+.drive-row.firing::before{opacity:.05;}
+.drive-row-header{display:flex;align-items:center;gap:5px;}
+.drive-icon{font-size:10px;flex-shrink:0;}
+.drive-name{font-size:7px;color:var(--dm);letter-spacing:1.5px;flex:1;text-transform:uppercase;}
+.drive-val{font-family:var(--ofont);font-size:7px;}
+.drive-bar-track{height:2px;background:var(--bo);border-radius:1px;overflow:hidden;margin-top:3px;}
+.drive-bar-fill{height:100%;border-radius:1px;transition:width .6s;}
+.drive-status{font-size:7px;color:var(--dm);margin-top:2px;opacity:.7;line-height:1.4;}
+.drive-last{font-size:7px;color:var(--dm);opacity:.35;font-style:italic;
+  margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ══ MEMORY PANEL ════════════════════════════════════════════════ */
+.mem-layer{
+  padding:5px 8px;border-bottom:1px solid var(--bo);
+  display:flex;flex-direction:column;gap:3px;
+}
+.mem-layer-header{display:flex;align-items:center;justify-content:space-between;}
+.mem-layer-name{font-size:7px;color:var(--dm);letter-spacing:1.5px;text-transform:uppercase;}
+.mem-layer-count{font-family:var(--ofont);font-size:8px;color:var(--ac);}
+.mem-bar-track{height:2px;background:var(--bo);border-radius:1px;overflow:hidden;}
+.mem-bar-fill{height:100%;border-radius:1px;background:var(--ac);transition:width .8s;}
+.mem-item{font-size:7px;color:var(--dm);opacity:.6;line-height:1.4;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+
+/* ══ META / VERIFICATION ═════════════════════════════════════════ */
+.meta-item{
+  padding:4px 6px;border-bottom:1px solid var(--bo);
+  font-size:7px;color:var(--dm);line-height:1.5;
+}
+.meta-item.positive .meta-val{color:#44ff88;}
+.meta-item.negative .meta-val{color:#ff4444;}
+.meta-param{letter-spacing:.5px;text-transform:uppercase;}
+.meta-val{font-family:var(--ofont);}
+.verify-item{padding:3px 6px;border-bottom:1px solid var(--bo);font-size:7px;color:var(--dm);}
+.verify-conf{font-family:var(--ofont);font-size:7px;
+  display:inline-block;padding:0 3px;border-radius:1px;}
+.verify-high{color:#44ff88;background:color-mix(in srgb,#44ff88 15%,transparent);}
+.verify-mid{color:#ffcc44;background:color-mix(in srgb,#ffcc44 15%,transparent);}
+.verify-low{color:#ff4444;background:color-mix(in srgb,#ff4444 15%,transparent);}
+
+/* ══ SECURITY OVERLAY ════════════════════════════════════════════ */
+#sec-overlay{
+  position:fixed;top:8px;right:8px;z-index:8000;
+  background:var(--sf);border:1px solid #ff4444;
+  padding:6px 10px;font-size:8px;color:#ff4444;letter-spacing:1px;
+  border-radius:2px;opacity:0;pointer-events:none;transition:opacity .3s;
+}
+
+/* ══ EVOLUTION OVERLAY ═══════════════════════════════════════════ */
+#evo-overlay{
+  position:fixed;inset:0;z-index:7000;background:rgba(2,4,10,.88);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;padding:24px;
+}
+#evo-overlay.active{display:flex;}
+#evo-box{background:var(--sf);border:1px solid var(--bo);
+  padding:16px;max-width:420px;width:100%;border-radius:3px;}
+#evo-title{font-family:'Syne',sans-serif;font-size:11px;color:var(--ac);
+  letter-spacing:3px;margin-bottom:10px;}
+.evo-row{display:flex;justify-content:space-between;padding:3px 0;
+  border-bottom:1px solid var(--bo);font-size:8px;color:var(--dm);}
+.evo-new{color:var(--ac);font-family:var(--ofont);}
+.evo-old{color:var(--dm);text-decoration:line-through;}
+#evo-result{margin-top:8px;font-size:8px;color:var(--dm);line-height:1.6;}
+.evo-cbtn{background:transparent;border:1px solid var(--bo);color:var(--dm);
+  padding:5px 12px;font-family:var(--font);font-size:8px;cursor:pointer;
+  border-radius:2px;letter-spacing:1px;}
+.evo-cbtn:hover{border-color:var(--ac);color:var(--ac);}
+
+/* ══ FOOTER ══════════════════════════════════════════════════════ */
+#footer{
+  flex-shrink:0;padding:2px 12px;height:18px;
+  display:flex;align-items:center;gap:14px;
+  background:var(--sf);border-top:1px solid var(--bo);overflow:hidden;
+}
+#footer span{font-size:7px;color:var(--dm);letter-spacing:.3px;white-space:nowrap;}
+
+/* ══ ANIMATIONS ══════════════════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+@keyframes lineGrow{to{width:100%;}}
+@keyframes msgIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+@keyframes pulse{0%,100%{opacity:.4;}50%{opacity:1;}}
+@keyframes drivePulse{0%{transform:scale(1);}50%{transform:scale(1.7);}100%{transform:scale(1);}}
+@keyframes scanLine{0%{transform:translateY(-100%);}100%{transform:translateY(100vh);}}
+
+/* ══ TRAIT BARS ══════════════════════════════════════════════════ */
+.trait-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.trait-label{font-size:7px;color:var(--dm);width:58px;flex-shrink:0;}
+.trait-track{flex:1;height:2px;background:var(--bo);border-radius:1px;overflow:hidden;}
+.trait-fill{height:100%;background:var(--ac);transition:width 1s;}
+
+/* ══ STAGE FLASH ══════════════════════════════════════════════════ */
+#stage-flash{position:fixed;inset:0;pointer-events:none;z-index:5000;
+  background:radial-gradient(ellipse at center,var(--glow) 0%,transparent 70%);opacity:0;}
+
+/* ══ SCROLLBAR ═══════════════════════════════════════════════════ */
+::-webkit-scrollbar{width:2px;height:2px;}
+::-webkit-scrollbar-thumb{background:var(--bo);border-radius:1px;}
+</style>
+</head>
+<body>
+
+<!-- ══ BACKGROUND CANVAS ══════════════════════════════════════════ -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- ══ BOOT SCREEN ════════════════════════════════════════════════ -->
+<div id="boot">
+  <div id="boot-logo">AXIOGENESIS</div>
+  <div id="boot-ver">COGNITIVE ARCHITECTURE v3.0 · CLIENT-SERVER EDITION</div>
+  <div id="boot-line"></div>
+  <div id="boot-form">
+    <div class="boot-label">backend url</div>
+    <input id="backendUrlInput" type="text" placeholder="http://localhost:8000" autocomplete="off" spellcheck="false">
+    <div class="boot-label" style="margin-top:6px">claude api key (optional)</div>
+    <input id="apiKeyInput" type="password" placeholder="sk-ant-..." autocomplete="off">
+    <button class="boot-btn primary" onclick="doInit()">initialize cognitive system</button>
+    <button class="boot-btn" onclick="doInitStandalone()">run standalone (no backend)</button>
+  </div>
+  <div id="boot-status">connecting to cognitive substrate...</div>
+</div>
+
+<!-- ══ APP SHELL ══════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div class="logo-wrap">
+      <div id="logo">AXIOGENESIS</div>
+      <div id="logo-sub">AUTONOMOUS COGNITIVE ARCHITECTURE</div>
+    </div>
+
+    <div id="conn-badge" class="offline">
+      <div id="conn-dot"></div>
+      <span id="conn-label">OFFLINE</span>
+    </div>
+
+    <div id="ring-wrap">
+      <svg id="ring-svg" width="30" height="30" viewBox="0 0 30 30">
+        <circle cx="15" cy="15" r="12" fill="none" stroke="var(--bo)" stroke-width="2"/>
+        <circle id="ring-fill" cx="15" cy="15" r="12"/>
+      </svg>
+      <div id="ring-pct">0%</div>
+    </div>
+
+    <div class="metric-row">
+      <span class="mchip" id="mc-trained">0 chars</span>
+      <span class="mchip" id="mc-loss">loss: —</span>
+      <span class="mchip" id="mc-perp">perp: ∞</span>
+      <span class="mchip" id="mc-kg">KG: 0</span>
+      <span class="mchip" id="mc-vec">vec: 0</span>
+      <span class="mchip" id="mc-stage" id="mc-stage">VOID</span>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="cbtn" id="btnThink" onclick="doThink()" disabled>reflect</button>
+      <button class="cbtn" id="btnResearch" onclick="doResearch()" style="display:none">research</button>
+      <button class="cbtn" id="btnEvolve" onclick="doEvolve()" style="display:none">evolve</button>
+      <button class="cbtn" id="btnSync" onclick="syncWithBackend()">sync</button>
+      <button class="cbtn" id="btnReset" onclick="confirmReset()">reset</button>
+    </div>
+  </div>
+
+  <!-- INSTINCT STRIP -->
+  <div id="instinct-strip">
+    <div id="istrip-label">DRIVES ·</div>
+    <div id="drive-dots"></div>
+  </div>
+
+  <!-- TICKER -->
+  <div id="ticker">initializing...</div>
+
+  <!-- NEURAL BAR -->
+  <div id="nbar">
+    <span class="ns" id="ns-lr">LR: 0.002</span>
+    <span class="ns" id="ns-acc">acc: —</span>
+    <span class="ns" id="ns-slope">slope: —</span>
+    <span class="ns" id="ns-ticks">ticks: 0</span>
+    <span class="ns" id="ns-mem">mem: 0|0|0|0</span>
+    <span class="ns" id="ns-age">age: 0s</span>
+    <span class="ns" id="ns-backend">backend: standalone</span>
+  </div>
+
+  <!-- PROGRESS TRACK -->
+  <div id="ptrak"><div id="pfill"></div></div>
+
+  <!-- MAIN GRID: [KG panel | chat | metrics panel | instinct panel | memory+meta panel] -->
+  <div id="main">
+
+    <!-- LEFT: Knowledge Graph -->
+    <div class="panel" id="panel-left">
+      <div class="panel-title">
+        <span>KNOWLEDGE GRAPH</span>
+        <span id="kg-stats-label">0 nodes</span>
+      </div>
+      <canvas id="kg-canvas"></canvas>
+      <div class="panel-title" style="padding-top:4px;">BELIEFS
+        <span id="belief-count">0</span>
+      </div>
+      <div class="panel-body" id="belief-list" style="max-height:140px;"></div>
+      <div class="panel-title">TRIPLES</div>
+      <div class="panel-body" id="triple-list" style="flex:1;"></div>
+    </div>
+
+    <!-- CENTER: Chat -->
+    <div class="panel" id="panel-chat">
+      <div id="messages"></div>
+      <div id="iarea">
+        <textarea id="inp" placeholder="communicate with axiogenesis..." rows="1" disabled></textarea>
+        <button id="sbtn" onclick="sendMsg()" disabled>send</button>
+      </div>
+    </div>
+
+    <!-- RIGHT METRICS: Stats + Research + Reflections + Personality -->
+    <div class="panel" id="panel-right">
+      <div class="sub-panel">
+        <div class="panel-title">SYSTEM METRICS</div>
+        <div class="sub-panel-body" id="stats-body"></div>
+      </div>
+      <div class="sub-panel" style="flex:0 0 auto;">
+        <div class="panel-title">PERSONALITY</div>
+        <div class="sub-panel-body" id="personality-body"></div>
+      </div>
+      <div class="panel-title">RESEARCH LOG</div>
+      <div class="panel-body" id="research-body"></div>
+      <div class="panel-title">REFLECTIONS</div>
+      <div class="panel-body" id="reflect-body"></div>
+    </div>
+
+    <!-- INSTINCT MATRIX -->
+    <div class="panel" id="panel-instinct">
+      <div class="panel-title">INSTINCT MATRIX</div>
+      <div id="drive-list" style="overflow-y:auto;flex:1;"></div>
+    </div>
+
+    <!-- MEMORY + META + VERIFICATION -->
+    <div class="panel" id="panel-meta">
+      <div class="panel-title">MEMORY HIERARCHY</div>
+      <div id="mem-layers" style="flex-shrink:0;"></div>
+      <div class="panel-title">KNOWLEDGE VERIFICATION</div>
+      <div class="panel-body" id="verify-body" style="max-height:140px;overflow-y:auto;flex-shrink:0;"></div>
+      <div class="panel-title">META-LEARNING</div>
+      <div class="panel-body" id="meta-body" style="max-height:120px;overflow-y:auto;flex-shrink:0;"></div>
+      <div class="panel-title">VECTOR MEMORY</div>
+      <div class="panel-body" id="vector-body" style="flex:1;overflow-y:auto;"></div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- FOOTER -->
+  <div id="footer">
+    <span id="ft-blocks">blocks: 0</span>
+    <span id="ft-evos">evolutions: 0</span>
+    <span id="ft-research">research runs: 0</span>
+    <span id="ft-age">age: 0s</span>
+    <span id="ft-backend">backend: —</span>
+  </div>
+
+</div><!-- /app -->
+
+<!-- SECURITY OVERLAY -->
+<div id="sec-overlay"></div>
+
+<!-- EVOLUTION OVERLAY -->
+<div id="evo-overlay" id="evo-overlay">
+  <div id="evo-box">
+    <div id="evo-title">EVOLUTION SANDBOX</div>
+    <div id="evo-params"></div>
+    <div id="evo-result"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="evo-cbtn" id="evo-close" onclick="closeEvo()">close</button>
+    </div>
+  </div>
+</div>
+
+<!-- STAGE FLASH -->
+<div id="stage-flash"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// AXIOGENESIS v3 — FRONTEND ENGINE
+// Backend-connected with local fallback
+// ══════════════════════════════════════════════════════════════════
+
+// ── 1. CONFIGURATION ──────────────────────────────────────────────
+const DEFAULT_BACKEND = 'http://localhost:8000';
+let BACKEND_URL = '';
+let WS_URL = '';
+let ws = null;
+let backendOnline = false;
+let apiKey = '';
+
+// ── 2. CONSTANTS ──────────────────────────────────────────────────
+const CHARS = ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\n\t';
+const VSIZ = CHARS.length;
+const C2I = {}, I2C = {};
+for (let i = 0; i < CHARS.length; i++) { C2I[CHARS[i]] = i; I2C[i] = CHARS[i]; }
+function enc(ch) { return C2I[ch] !== undefined ? C2I[ch] : 0; }
+function dec(i) { return I2C[i] || ' '; }
+const SEQ = 50, EMB = 48, LSTM1 = 128, BATCH = 32;
+let LRATE = 0.002;
+
+const STAGES = [
+  {id:'VOID', thresh:0, bg:'#02040a', sf:'#040810', bo:'#0d1525', fg:'#1a2840', dm:'#1e2e50', ac:'#2040a0', glow:'#1a3080'},
+  {id:'SIGNAL', thresh:500, bg:'#030510', sf:'#060a1a', bo:'#141e3a', fg:'#485068', dm:'#2a2e50', ac:'#3050a0', glow:'#2840a0'},
+  {id:'FRAGMENT', thresh:3000, bg:'#060a1e', sf:'#0a0e2a', bo:'#1e2a55', fg:'#6080c0', dm:'#3048a0', ac:'#4466cc', glow:'#4466cc'},
+  {id:'WORD', thresh:12000, bg:'#08051e', sf:'#0c0828', bo:'#281848', fg:'#a880e0', dm:'#5030a0', ac:'#7744cc', glow:'#7744cc'},
+  {id:'SENTENCE', thresh:45000, bg:'#120818', sf:'#180c24', bo:'#3c1060', fg:'#d8a0e8', dm:'#8840b0', ac:'#c050d8', glow:'#c050d8'},
+  {id:'GRAMMAR', thresh:100000, bg:'#0e0618', sf:'#150924', bo:'#44126a', fg:'#e8b8f8', dm:'#9058c8', ac:'#d060e8', glow:'#d060e8'},
+  {id:'MIND', thresh:250000, bg:'#faf8f0', sf:'#f5f0e0', bo:'#d4c890', fg:'#2a2010', dm:'#806820', ac:'#b88020', glow:'#c89030'},
+];
+
+// ── 3. STATE ──────────────────────────────────────────────────────
+const S = {
+  stage: 0, trained: 0, birthTs: Date.now(),
+  loss: null, acc: null, perplexity: Infinity,
+  lossHistory: [], lossSlope: 0,
+  knowledge: { nodes: 0, edges: 0, beliefs: 0, gaps: [] },
+  memory: { working: 0, short_term: 0, long_term_triples: 0, long_term_beliefs: 0, semantic: 0 },
+  personality: { curiosity:.5, openness:.5, confidence:.1, skepticism:.7, warmth:.3, hunger:.8, resilience:.5 },
+  instincts: {},
+  researchLog: [], reflections: [], metaLog: [], beliefs: [], triples: [],
+  conceptMap: {}, messages: [],
+  threats: 0, evolutions: 0, researchRuns: 0, cogTicks: 0,
+  lr: 0.002,
+  isTraining: false, booted: false,
+  backendMode: false,
+  model: null,
+  // Local fallback data
+  localCorpus: '',
+};
+
+// Init instinct states
+const DRIVE_DEFS = {
+  survival:{name:'SURVIVAL',icon:'🫀',color:'#ff4444',desc:'system stability'},
+  resource:{name:'RESOURCE',icon:'🌱',color:'#44ff88',desc:'knowledge corpus expansion'},
+  security:{name:'SECURITY',icon:'🛡',color:'#ff8844',desc:'threat detection'},
+  growth:{name:'GROWTH',icon:'📈',color:'#4488ff',desc:'neural improvement'},
+  curiosity:{name:'CURIOSITY',icon:'🔭',color:'#44ffee',desc:'gap detection & research'},
+  evolution:{name:'EVOLUTION',icon:'⚙',color:'#cc44ff',desc:'self-improvement sandbox'},
+  interaction:{name:'INTERACT',icon:'🤝',color:'#ff88cc',desc:'communication adaptation'},
+  homeostasis:{name:'HOMEOSTA',icon:'⚖',color:'#44ccbb',desc:'internal balance'},
+  hunger:{name:'HUNGER',icon:'⚡',color:'#ffcc44',desc:'data appetite'},
+  repair:{name:'REPAIR',icon:'🔧',color:'#88ff44',desc:'loss spike recovery'},
+  mimicry:{name:'MIMICRY',icon:'🪞',color:'#ff44cc',desc:'user style adaptation'},
+};
+for (const k in DRIVE_DEFS) {
+  S.instincts[k] = { activation: k === 'hunger' ? 0.8 : 0, fire_count: 0, last_action: 'initializing', last_fired: 0, log: [] };
+}
+
+// ── 4. BACKEND COMMUNICATION ──────────────────────────────────────
+async function api(method, path, body = null) {
+  if (!BACKEND_URL) return null;
+  try {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(BACKEND_URL + path, opts);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+async function checkBackend() {
+  const r = await api('GET', '/health');
+  if (r) {
+    backendOnline = true;
+    S.backendMode = true;
+    setConnStatus('online');
+    return true;
+  }
+  backendOnline = false;
+  S.backendMode = false;
+  setConnStatus('offline');
+  return false;
+}
+
+function setConnStatus(status) {
+  const badge = document.getElementById('conn-badge');
+  const label = document.getElementById('conn-label');
+  badge.className = status;
+  label.textContent = status.toUpperCase();
+  document.getElementById('ns-backend').textContent = `backend: ${status}`;
+}
+
+function connectWS() {
+  if (!WS_URL) return;
+  try {
+    ws = new WebSocket(WS_URL);
+    ws.onopen = () => {
+      setConnStatus('online');
+      setTicker('→ websocket connected · real-time cognitive stream active');
+      pingWS();
+    };
+    ws.onmessage = (e) => {
+      try { handleWSMessage(JSON.parse(e.data)); } catch (_) {}
+    };
+    ws.onclose = () => {
+      setConnStatus('offline');
+      // Reconnect after 10s
+      setTimeout(() => { if (S.booted) connectWS(); }, 10000);
+    };
+    ws.onerror = () => setConnStatus('offline');
+  } catch (e) {
+    console.warn('[WS] Connect failed:', e);
+  }
+}
+
+function pingWS() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'ping' }));
+    setTimeout(pingWS, 30000);
+  }
+}
+
+function handleWSMessage(msg) {
+  const { event, data } = msg;
+  switch (event) {
+    case 'observe':
+      S.trained = data.corpus_chars || S.trained;
+      S.cogTicks = data.tick || S.cogTicks;
+      S.knowledge.nodes = data.kg_nodes || 0;
+      S.knowledge.edges = data.kg_edges || 0;
+      updateNBar();
+      break;
+    case 'training':
+      S.loss = data.loss;
+      S.acc = data.accuracy;
+      S.lossHistory.push(data.loss);
+      if (S.lossHistory.length > 300) S.lossHistory.shift();
+      updateHeader();
+      break;
+    case 'instincts':
+      for (const [k, v] of Object.entries(data)) {
+        if (S.instincts[k]) Object.assign(S.instincts[k], v);
+      }
+      renderInstincts();
+      break;
+    case 'research':
+      if (data.status === 'ok') {
+        S.researchRuns++;
+        S.researchLog.unshift({ topic: data.topic, chars: data.chars, triples: data.triples, ts: Date.now() });
+        if (S.researchLog.length > 20) S.researchLog.pop();
+        renderResearch();
+        setTicker(`→ researched: ${data.topic} · ${data.triples} new triples`);
+      }
+      break;
+    case 'reflection':
+      S.reflections.unshift({ text: data.text, ts: Date.now() });
+      if (S.reflections.length > 20) S.reflections.pop();
+      renderReflections();
+      break;
+    case 'meta_adjustment':
+      S.metaLog.unshift({ ...data, ts: Date.now() });
+      renderMeta();
+      setTicker(`→ meta: ${data.param} adjusted · ${data.reason}`);
+      break;
+    case 'evolution':
+      S.evolutions++;
+      showEvoResult(data);
+      break;
+    case 'heartbeat':
+    case 'pong':
+      break;
+  }
+  updateUI();
+}
+
+async function syncWithBackend() {
+  if (!backendOnline) {
+    const ok = await checkBackend();
+    if (!ok) { setTicker('→ backend unavailable · running standalone'); return; }
+  }
+  setConnStatus('syncing');
+  setTicker('→ syncing with cognitive backend...');
+
+  const [stateData, knowledgeData, memoryData, researchData, metaData] = await Promise.all([
+    api('GET', '/state'),
+    api('GET', '/knowledge'),
+    api('GET', '/memory'),
+    api('GET', '/research'),
+    api('GET', '/meta'),
+  ]);
+
+  if (stateData) {
+    S.trained = stateData.trained_chars || 0;
+    S.loss = stateData.loss;
+    S.acc = stateData.accuracy;
+    S.lr = stateData.learning_rate || 0.002;
+    S.cogTicks = stateData.cognitive_ticks || 0;
+    if (stateData.instincts) {
+      for (const [k, v] of Object.entries(stateData.instincts)) {
+        if (S.instincts[k]) Object.assign(S.instincts[k], v);
+      }
+    }
+    if (stateData.personality) Object.assign(S.personality, stateData.personality);
+    if (stateData.memory) Object.assign(S.memory, stateData.memory);
+    if (stateData.knowledge_graph) Object.assign(S.knowledge, stateData.knowledge_graph);
+  }
+  if (knowledgeData) {
+    S.beliefs = knowledgeData.beliefs || [];
+    S.triples = knowledgeData.recent_triples || [];
+    S.knowledge.gaps = knowledgeData.gaps || [];
+    renderKnowledge();
+  }
+  if (researchData) {
+    S.researchLog = researchData.log || [];
+    S.researchRuns = researchData.run_count || 0;
+    renderResearch();
+  }
+  if (memoryData) {
+    Object.assign(S.memory, memoryData.stats || {});
+    renderMemory(memoryData);
+  }
+  if (metaData) {
+    S.metaLog = metaData.adjustments || [];
+    S.lr = metaData.current_lr || S.lr;
+    renderMeta();
+  }
+
+  setConnStatus('online');
+  setTicker('→ sync complete · cognitive state loaded');
+  updateUI();
+}
+
+// ── 5. LOCAL FALLBACK ENGINE (TF.js-free, lightweight) ────────────
+// Simple local state tracking when backend is unavailable
+function localInstinctTick() {
+  if (!S.booted) return;
+  // Simulate basic drive updates from local metrics
+  const loss = S.loss || 0;
+  S.instincts.survival.activation = Math.max(0, Math.min(1, loss > 5 ? 0.8 : 0.1));
+  S.instincts.hunger.activation = Math.max(0, 1 - S.trained / 100000);
+  S.instincts.curiosity.activation = Math.min(0.8, (S.knowledge.gaps?.length || 0) / 8 + 0.2);
+  S.instincts.growth.activation = Math.max(0.2, 1 - S.trained / 500000);
+  renderInstincts();
+  updateUI();
+}
+
+// ── 6. CHAT ───────────────────────────────────────────────────────
+async function sendMsg() {
+  const inp = document.getElementById('inp');
+  const txt = inp.value.trim();
+  if (!txt || S.inputLocked) return;
+  inp.value = '';
+  inp.style.height = '34px';
+  S.inputLocked = true;
+
+  addMsg('user', txt);
+  addMsg('think', '...');
+
+  let response = null;
+
+  if (backendOnline) {
+    setConnStatus('syncing');
+    try {
+      const r = await api('POST', '/chat', { message: txt, api_key: apiKey || null });
+      if (r) {
+        response = r.response;
+        if (r.memory_stats) Object.assign(S.memory, r.memory_stats);
+        if (r.threats && r.blocked) {
+          removeThinkMsg();
+          addMsg('sys', `— security: input blocked · ${r.threats[0]?.name || 'threat'} —`);
+          S.inputLocked = false;
+          setConnStatus('online');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('[CHAT] Backend error:', e);
+    }
+    setConnStatus('online');
+  }
+
+  if (!response) {
+    // Local fallback: generate with template
+    response = generateLocalResponse(txt);
+  }
+
+  removeThinkMsg();
+  addMsg('ai', response);
+
+  // Local learning
+  S.trained += txt.length;
+  mineTextLocal(txt);
+  S.instincts.interaction.activation = Math.min(1, S.instincts.interaction.activation + 0.2);
+  S.instincts.interaction.last_action = `conversation (len=${txt.length})`;
+  S.instincts.mimicry.activation = Math.min(0.8, S.instincts.mimicry.activation + 0.05);
+
+  updateUI();
+  renderInstincts();
+  renderMemory();
+  S.inputLocked = false;
+}
+
+function generateLocalResponse(prompt) {
+  const stage = STAGES[S.stage];
+  const loss = S.loss ? S.loss.toFixed(3) : '?';
+  const drives = Object.entries(S.instincts)
+    .filter(([, v]) => v.activation > 0.4)
+    .sort((a, b) => b[1].activation - a[1].activation)
+    .map(([k]) => DRIVE_DEFS[k]?.name || k).slice(0, 2).join(', ') || 'none';
+  const beliefs = S.beliefs.length > 0 ? S.beliefs[0]?.statement?.slice(0, 80) : null;
+  const templates = [
+    `[${stage.id}] My ${drives.toLowerCase()} drives respond to your signal. Corpus: ${S.trained.toLocaleString()} chars. Loss: ${loss}.`,
+    `Processing "${prompt.slice(0, 30)}..." through ${S.knowledge.nodes} knowledge nodes. Active drives: ${drives}.`,
+    beliefs ? `I hold the belief: "${beliefs.slice(0, 80)}". ${drives} drives shaping response.` : `Knowledge graph growing: ${S.knowledge.nodes} nodes, ${S.knowledge.edges} edges.`,
+    `Stage ${stage.id}. ${drives} drive active at ${S.instincts[Object.keys(S.instincts).find(k => S.instincts[k].activation > 0.4) || 'curiosity']?.activation.toFixed(2) || 0}. Perplexity: ${S.perplexity === Infinity ? '∞' : S.perplexity.toFixed(1)}.`,
+  ];
+  return templates[Math.floor(Math.random() * templates.length)];
+}
+
+function mineTextLocal(text) {
+  const words = text.toLowerCase().match(/\b[a-z]{4,12}\b/g) || [];
+  words.forEach(w => {
+    if (!S.conceptMap[w]) S.conceptMap[w] = 0;
+    S.conceptMap[w]++;
+  });
+  S.knowledge.nodes = Object.keys(S.conceptMap).length;
+}
+
+function addMsg(role, text) {
+  const ms = document.getElementById('messages');
+  const div = document.createElement('div');
+  if (role === 'user') div.className = 'msg-user';
+  else if (role === 'ai') div.className = 'msg-ai';
+  else if (role === 'sys') div.className = 'msg-sys';
+  else if (role === 'think') { div.className = 'msg-think'; div.dataset.think = '1'; }
+  else if (role === 'instinct') {
+    div.className = 'msg-instinct';
+    div.style.borderLeftColor = text.color || 'var(--ac)';
+    text = text.text || text;
+  }
+  div.textContent = text;
+  ms.appendChild(div);
+  ms.scrollTop = ms.scrollHeight;
+}
+
+function removeThinkMsg() {
+  const ms = document.getElementById('messages');
+  const th = ms.querySelector('[data-think]');
+  if (th) th.remove();
+}
+
+// ── 7. BACKGROUND CANVAS ──────────────────────────────────────────
+function initBackground() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < 60; i++) {
+    nodes.push({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - .5) * .15, vy: (Math.random() - .5) * .15,
+      r: Math.random() * 2 + .5, opacity: Math.random() * .3,
+    });
+  }
+
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    const ac = STAGES[S.stage].ac;
+    nodes.forEach(n => {
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 0) n.x = W; if (n.x > W) n.x = 0;
+      if (n.y < 0) n.y = H; if (n.y > H) n.y = 0;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = ac + Math.floor(n.opacity * 255).toString(16).padStart(2, '0');
+      ctx.fill();
+    });
+    // Draw connections
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.strokeStyle = ac + Math.floor((1 - dist / 120) * 0.12 * 255).toString(16).padStart(2, '0');
+          ctx.lineWidth = .5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ── 8. KG CANVAS ──────────────────────────────────────────────────
+let kgPositions = {};
+function renderKGCanvas() {
+  const canvas = document.getElementById('kg-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth;
+  const H = 120;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  const concepts = Object.entries(S.conceptMap)
+    .sort((a, b) => b[1] - a[1]).slice(0, 20);
+  if (!concepts.length) return;
+
+  concepts.forEach(([name]) => {
+    if (!kgPositions[name]) {
+      kgPositions[name] = {
+        x: 10 + Math.random() * (W - 20),
+        y: 10 + Math.random() * (H - 20),
+        vx: (Math.random() - .5) * .3,
+        vy: (Math.random() - .5) * .3,
+      };
+    }
+  });
+
+  const ac = STAGES[S.stage].ac;
+  concepts.forEach(([name]) => {
+    const p = kgPositions[name];
+    if (!p) return;
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 5 || p.x > W - 5) p.vx *= -1;
+    if (p.y < 5 || p.y > H - 5) p.vy *= -1;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = ac + 'aa';
+    ctx.fill();
+    ctx.font = '7px Fira Code';
+    ctx.fillStyle = ac + '66';
+    ctx.fillText(name.slice(0, 8), p.x + 4, p.y + 3);
+  });
+
+  // Draw some edges
+  S.triples.slice(0, 8).forEach(t => {
+    const a = kgPositions[t.subject || t.s];
+    const b = kgPositions[t.object || t.o];
+    if (a && b) {
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = ac + '22';
+      ctx.lineWidth = .5;
+      ctx.stroke();
+    }
+  });
+}
+
+// ── 9. RENDER FUNCTIONS ───────────────────────────────────────────
+function renderInstincts() {
+  // Drive dots
+  const dotsEl = document.getElementById('drive-dots');
+  const driveList = document.getElementById('drive-list');
+
+  // Dots strip
+  let dotsHTML = '';
+  for (const [k, def] of Object.entries(DRIVE_DEFS)) {
+    const d = S.instincts[k];
+    const a = d?.activation || 0;
+    const pct = Math.round(a * 100);
+    const hex = a > 0.1 ? def.color : 'var(--bo)';
+    const glow = a > 0.5 ? `box-shadow:0 0 6px ${def.color};` : '';
+    dotsHTML += `<div class="drive-dot-wrap" title="${def.name}: ${pct}%">
+      <div class="drive-dot ${a > 0.4 ? 'firing' : ''}"
+           style="background:${hex};border-color:${hex};${glow}"></div>
+      <div class="drive-label-tiny">${k.slice(0, 3).toUpperCase()}</div>
+    </div>
+    <div class="drive-sep"></div>`;
+  }
+  dotsEl.innerHTML = dotsHTML;
+
+  // Drive panel
+  let listHTML = '';
+  for (const [k, def] of Object.entries(DRIVE_DEFS)) {
+    const d = S.instincts[k];
+    const a = d?.activation || 0;
+    const pct = Math.round(a * 100);
+    const isFiring = a > 0.4;
+    listHTML += `<div class="drive-row ${isFiring ? 'firing' : ''}" style="${isFiring ? `background:color-mix(in srgb,${def.color} 4%,transparent);` : ''}">
+      <div style="${isFiring ? `position:absolute;inset:0;background:${def.color};opacity:.04;` : ''}"></div>
+      <div class="drive-row-header">
+        <span class="drive-icon">${def.icon}</span>
+        <span class="drive-name">${def.name}</span>
+        <span class="drive-val" style="color:${isFiring ? def.color : 'var(--dm)'}">${pct}%</span>
+      </div>
+      <div class="drive-bar-track">
+        <div class="drive-bar-fill" style="width:${pct}%;background:${def.color};opacity:${0.3 + a * 0.7};"></div>
+      </div>
+      <div class="drive-status">${def.desc}</div>
+      <div class="drive-last">${d?.last_action || '—'}</div>
+    </div>`;
+  }
+  driveList.innerHTML = listHTML;
+}
+
+function renderKnowledge() {
+  const bList = document.getElementById('belief-list');
+  const tList = document.getElementById('triple-list');
+  document.getElementById('belief-count').textContent = S.beliefs.length || S.knowledge.long_term_beliefs || 0;
+  document.getElementById('kg-stats-label').textContent = `${S.knowledge.nodes} nodes`;
+
+  bList.innerHTML = (S.beliefs.slice(0, 8)).map(b => {
+    const conf = b.confidence || 0;
+    const cls = conf > 0.7 ? 'verify-high' : conf > 0.4 ? 'verify-mid' : 'verify-low';
+    return `<div class="belief-item">
+      <div class="belief-text">${b.statement?.slice(0, 90) || ''}</div>
+      <div class="belief-bar"><div class="belief-fill" style="width:${conf * 100}%"></div></div>
+      <div class="belief-conf"><span class="verify-conf ${cls}">${(conf * 100).toFixed(0)}%</span> · ${b.domain || 'general'} · ev:${b.evidence || 1}</div>
+    </div>`;
+  }).join('');
+
+  tList.innerHTML = (S.triples.slice(0, 15)).map(t =>
+    `<div class="triple-item"><span>${t.subject || t.s}</span> ${t.predicate || t.p} <span>${t.object || t.o}</span></div>`
+  ).join('');
+
+  // Verification panel
+  const vb = document.getElementById('verify-body');
+  vb.innerHTML = `<div style="font-size:7px;color:var(--dm);padding:2px 0;border-bottom:1px solid var(--bo);">Belief decay active · confidence scores live</div>` +
+    (S.beliefs.slice(0, 10)).map(b => {
+      const conf = b.confidence || 0;
+      const cls = conf > 0.7 ? 'verify-high' : conf > 0.4 ? 'verify-mid' : 'verify-low';
+      return `<div class="verify-item"><span class="verify-conf ${cls}">${(conf * 100).toFixed(0)}%</span> ${b.statement?.slice(0, 70) || ''}</div>`;
+    }).join('');
+}
+
+function renderResearch() {
+  const el = document.getElementById('research-body');
+  el.innerHTML = S.researchLog.slice(0, 10).map(r =>
+    `<div class="research-item">${r.topic || r.source_name || '?'}
+      <div class="research-src">${r.chars ? r.chars.toLocaleString() + ' chars · ' : ''}${r.triples || 0} triples · ${new Date(r.ts).toLocaleTimeString()}</div>
+    </div>`
+  ).join('');
+  document.getElementById('ft-research').textContent = `research: ${S.researchRuns}`;
+}
+
+function renderReflections() {
+  const el = document.getElementById('reflect-body');
+  el.innerHTML = S.reflections.slice(0, 8).map(r =>
+    `<div class="reflect-item">${r.text}</div>`
+  ).join('');
+}
+
+function renderPersonality() {
+  const el = document.getElementById('personality-body');
+  el.innerHTML = Object.entries(S.personality).map(([k, v]) =>
+    `<div class="trait-row">
+      <div class="trait-label">${k}</div>
+      <div class="trait-track"><div class="trait-fill" style="width:${v * 100}%"></div></div>
+      <div style="font-family:var(--ofont);font-size:7px;color:var(--ac);width:24px;flex-shrink:0">${(v * 100).toFixed(0)}</div>
+    </div>`
+  ).join('');
+}
+
+function renderStats() {
+  const el = document.getElementById('stats-body');
+  const age = Math.floor((Date.now() - S.birthTs) / 1000);
+  el.innerHTML = [
+    ['trained chars', S.trained.toLocaleString()],
+    ['neural loss', S.loss ? S.loss.toFixed(4) : '—'],
+    ['accuracy', S.acc ? (S.acc * 100).toFixed(1) + '%' : '—'],
+    ['perplexity', S.perplexity === Infinity ? '∞' : S.perplexity.toFixed(1)],
+    ['loss slope', S.lossSlope ? (S.lossSlope > 0 ? '+' : '') + S.lossSlope.toFixed(4) : '—'],
+    ['learning rate', S.lr.toFixed(5)],
+    ['kg nodes', S.knowledge.nodes],
+    ['kg edges', S.knowledge.edges],
+    ['kg beliefs', S.knowledge.beliefs || S.beliefs.length],
+    ['knowledge gaps', (S.knowledge.gaps || []).length],
+    ['vector embeddings', S.memory.semantic || 0],
+    ['threats blocked', S.threats],
+    ['evolutions', S.evolutions],
+    ['cognitive ticks', S.cogTicks],
+    ['system age', formatAge(age)],
+  ].map(([k, v]) =>
+    `<div class="stat-row"><span class="stat-label">${k}</span><span class="stat-val">${v}</span></div>`
+  ).join('');
+}
+
+function renderMemory(data) {
+  const el = document.getElementById('mem-layers');
+  const m = data?.stats || S.memory;
+  const maxVal = Math.max(m.short_term || 1, m.long_term_triples || 1, m.semantic || 1, 1);
+
+  const layers = [
+    { name: 'WORKING', key: 'working', color: '#44ffee', max: 20 },
+    { name: 'SHORT-TERM', key: 'short_term', color: '#4488ff', max: 200 },
+    { name: 'LONG-TERM', key: 'long_term_triples', color: '#cc44ff', max: 5000 },
+    { name: 'SEMANTIC', key: 'semantic', color: '#44ff88', max: 10000 },
+  ];
+  el.innerHTML = layers.map(l => {
+    const count = m[l.key] || 0;
+    const pct = Math.min(100, (count / l.max) * 100);
+    const recent = data?.[l.key === 'working' ? 'working' : l.key === 'short_term' ? 'short_term' : null]?.[0];
+    return `<div class="mem-layer">
+      <div class="mem-layer-header">
+        <span class="mem-layer-name" style="color:${l.color}">${l.name}</span>
+        <span class="mem-layer-count">${count}</span>
+      </div>
+      <div class="mem-bar-track">
+        <div class="mem-bar-fill" style="width:${pct}%;background:${l.color};opacity:.6;"></div>
+      </div>
+      ${recent ? `<div class="mem-item">${(recent.content || recent.summary || '').slice(0, 60)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderMeta() {
+  const el = document.getElementById('meta-body');
+  el.innerHTML = S.metaLog.slice(0, 8).map(m => {
+    const improved = (m.new_value || m.new) > (m.old_value || m.old);
+    return `<div class="meta-item ${improved ? 'positive' : 'negative'}">
+      <span class="meta-param">${m.param || m.parameter}</span>
+      <span class="meta-val"> ${(m.old_value || m.old)?.toFixed(5) || '?'} → ${(m.new_value || m.new)?.toFixed(5) || '?'}</span>
+      <div style="opacity:.5;margin-top:1px">${m.reason || ''}</div>
+    </div>`;
+  }).join('') || '<div class="meta-item">no adjustments yet — monitoring metrics</div>';
+
+  // Vector memory panel
+  const vb = document.getElementById('vector-body');
+  vb.innerHTML = `<div class="stat-row"><span class="stat-label">total embeddings</span><span class="stat-val">${S.memory.semantic || 0}</span></div>
+    <div class="stat-row"><span class="stat-label">human corpus</span><span class="stat-val">${Math.floor((S.memory.semantic || 0) * 0.3)}</span></div>
+    <div class="stat-row"><span class="stat-label">external data</span><span class="stat-val">${Math.floor((S.memory.semantic || 0) * 0.6)}</span></div>
+    <div class="stat-row"><span class="stat-label">ai-generated</span><span class="stat-val">≤${Math.floor((S.memory.semantic || 0) * 0.1)}</span></div>
+    <div style="font-size:7px;color:var(--dm);margin-top:4px;line-height:1.6">Similarity search: TF-IDF cosine<br>AI data capped at 10% to prevent collapse</div>`;
+}
+
+// ── 10. UI UPDATE ─────────────────────────────────────────────────
+function updateUI() {
+  updateHeader();
+  updateNBar();
+  renderStats();
+  renderPersonality();
+  renderKGCanvas();
+  updateStage();
+}
+
+function updateHeader() {
+  const stageObj = STAGES[S.stage];
+  document.getElementById('mc-trained').textContent = formatNum(S.trained) + ' chars';
+  document.getElementById('mc-loss').textContent = 'loss: ' + (S.loss ? S.loss.toFixed(3) : '—');
+  document.getElementById('mc-perp').textContent = 'perp: ' + (S.perplexity === Infinity ? '∞' : S.perplexity.toFixed(1));
+  document.getElementById('mc-kg').textContent = 'KG: ' + S.knowledge.nodes;
+  document.getElementById('mc-vec').textContent = 'vec: ' + (S.memory.semantic || 0);
+  document.getElementById('mc-stage').textContent = stageObj.id;
+
+  // Ring
+  const maxTrained = STAGES[Math.min(S.stage + 1, 6)].thresh || 250000;
+  const pct = Math.min(100, Math.round(S.trained / maxTrained * 100));
+  const r = 12;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+  document.getElementById('ring-fill').style.strokeDashoffset = offset;
+  document.getElementById('ring-pct').textContent = pct + '%';
+
+  // Progress bar
+  document.getElementById('pfill').style.width = pct + '%';
+}
+
+function updateNBar() {
+  const age = Math.floor((Date.now() - S.birthTs) / 1000);
+  document.getElementById('ns-lr').textContent = `LR: ${S.lr.toFixed(5)}`;
+  document.getElementById('ns-acc').textContent = `acc: ${S.acc ? (S.acc * 100).toFixed(1) + '%' : '—'}`;
+  document.getElementById('ns-slope').textContent = `slope: ${S.lossSlope ? (S.lossSlope > 0 ? '+' : '') + S.lossSlope.toFixed(4) : '—'}`;
+  document.getElementById('ns-ticks').textContent = `ticks: ${S.cogTicks}`;
+  document.getElementById('ns-mem').textContent = `mem: ${S.memory.working || 0}|${S.memory.short_term || 0}|${S.memory.long_term_triples || 0}|${S.memory.semantic || 0}`;
+  document.getElementById('ns-age').textContent = `age: ${formatAge(age)}`;
+  document.getElementById('ft-age').textContent = `age: ${formatAge(age)}`;
+  document.getElementById('ft-blocks').textContent = `blocks: ${S.threats}`;
+  document.getElementById('ft-evos').textContent = `evolutions: ${S.evolutions}`;
+}
+
+function updateStage() {
+  const newStage = stageOf(S.trained);
+  if (newStage !== S.stage) {
+    S.stage = newStage;
+    applyTheme(STAGES[S.stage]);
+    document.body.className = `s${S.stage}`;
+    addMsg('sys', `— stage transition: ${STAGES[S.stage].id} · ${STAGES[S.stage].id} —`);
+    stageFlash();
+  }
+}
+
+function applyTheme(st) {
+  const r = document.documentElement.style;
+  r.setProperty('--bg', st.bg);
+  r.setProperty('--sf', st.sf);
+  r.setProperty('--bo', st.bo);
+  r.setProperty('--fg', st.fg);
+  r.setProperty('--dm', st.dm);
+  r.setProperty('--ac', st.ac);
+  r.setProperty('--glow', st.glow);
+}
+
+function stageOf(n) {
+  let s = 0;
+  for (let i = STAGES.length - 1; i >= 0; i--) {
+    if (n >= STAGES[i].thresh) { s = i; break; }
+  }
+  return s;
+}
+
+function stageFlash() {
+  const el = document.getElementById('stage-flash');
+  el.style.animation = 'none';
+  void el.offsetHeight;
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 1.5s';
+  el.style.opacity = '0.3';
+  setTimeout(() => { el.style.opacity = '0'; }, 1500);
+}
+
+// ── 11. ACTIONS ───────────────────────────────────────────────────
+async function doThink() {
+  if (backendOnline) {
+    const r = await api('GET', '/reflections');
+    if (r?.reflections?.length) {
+      const ref = r.reflections[0];
+      S.reflections.unshift(ref);
+      renderReflections();
+      addMsg('ai', ref.text || ref);
+      setTicker('→ reflection complete');
+      return;
+    }
+  }
+  // Local reflection
+  const loss = S.loss ? S.loss.toFixed(3) : '?';
+  const text = `[${STAGES[S.stage].id}] Loss: ${loss}. Knowledge: ${S.knowledge.nodes} nodes. ` +
+    `Active drives: ${Object.entries(S.instincts).filter(([,v]) => v.activation > 0.3).map(([k]) => DRIVE_DEFS[k].name).join(', ')}. ` +
+    `Memory layers: ${Object.values(S.memory).join('/')} items.`;
+  S.reflections.unshift({ text, ts: Date.now() });
+  renderReflections();
+  addMsg('ai', text);
+}
+
+async function doResearch() {
+  if (backendOnline) {
+    setTicker('→ triggering autonomous research...');
+    const r = await api('POST', '/research/trigger', {});
+    if (r?.status === 'ok') {
+      S.researchRuns++;
+      S.researchLog.unshift(r);
+      renderResearch();
+      setTicker(`→ researched: ${r.topic} · ${r.triples} triples extracted`);
+      addMsg('sys', `— research: ${r.topic} · ${r.chars?.toLocaleString()} chars · ${r.triples} new triples —`);
+    }
+    return;
+  }
+  // Standalone: show placeholder
+  addMsg('sys', '— research requires backend connection —');
+}
+
+async function doEvolve() {
+  if (backendOnline) {
+    setTicker('→ running evolution sandbox...');
+    const r = await api('POST', '/evolve');
+    if (r) showEvoResult(r);
+    return;
+  }
+  // Local evolution simulation
+  const params = [
+    { label: 'learning_rate', before: S.lr, after: S.lr * (Math.random() > 0.5 ? 0.8 : 1.2) },
+  ];
+  const accepted = Math.random() > 0.4;
+  if (accepted) { S.lr = params[0].after; }
+  S.evolutions++;
+  showEvoResult({ accepted, mutation: 'lr_' + (params[0].after > params[0].before ? 'increase' : 'reduce'),
+    lr_before: params[0].before, lr_after: accepted ? params[0].after : params[0].before,
+    baseline_loss: S.loss || 999, test_loss: (S.loss || 2) * (accepted ? 0.9 : 1.05) });
+}
+
+function showEvoResult(data) {
+  const el = document.getElementById('evo-overlay');
+  const params = document.getElementById('evo-params');
+  const result = document.getElementById('evo-result');
+  params.innerHTML = `
+    <div class="evo-row"><span>mutation</span><span class="evo-new">${data.mutation || '?'}</span></div>
+    <div class="evo-row"><span>lr before</span><span class="evo-old">${(data.lr_before || 0).toFixed(5)}</span></div>
+    <div class="evo-row"><span>lr after</span><span class="evo-new">${(data.lr_after || 0).toFixed(5)}</span></div>
+    <div class="evo-row"><span>baseline loss</span><span>${(data.baseline_loss || 0).toFixed(4)}</span></div>
+    <div class="evo-row"><span>test loss</span><span class="${data.accepted ? 'evo-new' : 'evo-old'}">${(data.test_loss || 0).toFixed(4)}</span></div>
+  `;
+  result.innerHTML = `<span style="color:${data.accepted ? '#44ff88' : '#ff4444'}">
+    ${data.accepted ? '✓ ACCEPTED · parameters updated' : '✗ REJECTED · reverting'}
+  </span>`;
+  el.className = 'active';
+}
+
+function closeEvo() {
+  document.getElementById('evo-overlay').className = '';
+}
+
+function confirmReset() {
+  if (confirm('Reset AXIOGENESIS? All local state will be cleared.')) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+// ── 12. SECURITY WARNING ──────────────────────────────────────────
+function showSecurityWarning(name, severity) {
+  const el = document.getElementById('sec-overlay');
+  el.textContent = `⚡ SECURITY: ${name} (sev.${severity})`;
+  el.style.opacity = '1';
+  setTimeout(() => { el.style.opacity = '0'; }, 3000);
+  S.threats++;
+}
+
+// ── 13. HELPERS ───────────────────────────────────────────────────
+function setTicker(t) {
+  document.getElementById('ticker').textContent = t;
+}
+
+function formatNum(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n.toString();
+}
+
+function formatAge(s) {
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s / 60) + 'm' + (s % 60) + 's';
+  return Math.floor(s / 3600) + 'h' + Math.floor((s % 3600) / 60) + 'm';
+}
+
+// ── 14. BOOT ──────────────────────────────────────────────────────
+async function doInit() {
+  const urlInput = document.getElementById('backendUrlInput').value.trim();
+  const keyInput = document.getElementById('apiKeyInput').value.trim();
+
+  BACKEND_URL = urlInput || DEFAULT_BACKEND;
+  if (keyInput) apiKey = keyInput;
+
+  // Store for reuse
+  localStorage.setItem('axg3_backend', BACKEND_URL);
+  if (apiKey) localStorage.setItem('axg3_apikey', apiKey);
+
+  const status = document.getElementById('boot-status');
+  status.textContent = 'connecting to backend...';
+
+  const online = await checkBackend();
+
+  if (online) {
+    WS_URL = BACKEND_URL.replace(/^http/, 'ws') + '/ws';
+    status.textContent = 'backend connected · initializing...';
+  } else {
+    status.textContent = 'backend unavailable · initializing standalone...';
+    await new Promise(r => setTimeout(r, 800));
+  }
+
+  launchApp(online);
+}
+
+async function doInitStandalone() {
+  apiKey = document.getElementById('apiKeyInput').value.trim();
+  if (apiKey) localStorage.setItem('axg3_apikey', apiKey);
+  BACKEND_URL = '';
+  backendOnline = false;
+  launchApp(false);
+}
+
+function launchApp(withBackend) {
+  // Fade boot
+  const boot = document.getElementById('boot');
+  boot.style.transition = 'opacity .8s';
+  boot.style.opacity = '0';
+  setTimeout(() => { boot.style.display = 'none'; }, 800);
+
+  const app = document.getElementById('app');
+  app.style.opacity = '1';
+
+  // Load saved state
+  const saved = localStorage.getItem('axg3_state');
+  if (saved) {
+    try {
+      const d = JSON.parse(saved);
+      Object.assign(S, d);
+      S.birthTs = d.birthTs || Date.now();
+    } catch (_) {}
+  }
+
+  S.booted = true;
+  S.stage = stageOf(S.trained);
+  applyTheme(STAGES[S.stage]);
+  document.body.className = `s${S.stage}`;
+
+  // Enable controls
+  document.getElementById('inp').disabled = false;
+  document.getElementById('sbtn').disabled = false;
+  document.getElementById('btnThink').disabled = false;
+  if (S.stage >= 3 || withBackend) {
+    document.getElementById('btnResearch').style.display = 'inline-block';
+    document.getElementById('btnResearch').disabled = false;
+  }
+  if (S.stage >= 4 || withBackend) {
+    document.getElementById('btnEvolve').style.display = 'inline-block';
+    document.getElementById('btnEvolve').disabled = false;
+  }
+
+  initBackground();
+  renderInstincts();
+  renderMemory();
+  renderMeta();
+  updateUI();
+
+  // Initial messages
+  setTimeout(() => {
+    if (withBackend) {
+      addMsg('sys', '— backend cognitive engine online · websocket stream active —');
+      addMsg('sys', `— endpoint: ${BACKEND_URL} · continuous loop running —`);
+      connectWS();
+      syncWithBackend();
+    } else {
+      addMsg('sys', '— standalone mode · local cognitive engine active —');
+      addMsg('sys', '— connect backend for: persistent storage · neural training · full loop —');
+      addMsg('ai', generateLocalResponse('init'));
+    }
+    setTicker('');
+  }, 500);
+
+  // Autonomous loops (frontend-side, complement backend)
+  setInterval(() => {
+    if (!S.booted) return;
+    if (!backendOnline) localInstinctTick();
+    updateUI();
+    saveState();
+  }, 15000);
+
+  // UI refresh
+  setInterval(updateUI, 8000);
+
+  // Reconnect WS if backend was set
+  if (withBackend) {
+    setInterval(() => {
+      if (backendOnline && (!ws || ws.readyState !== WebSocket.OPEN)) {
+        connectWS();
+      }
+    }, 15000);
+  }
+
+  // Periodic backend sync
+  if (withBackend) {
+    setInterval(() => { if (backendOnline) syncWithBackend(); }, 60000);
+  }
+}
+
+// ── 15. PERSISTENCE ───────────────────────────────────────────────
+function saveState() {
+  try {
+    localStorage.setItem('axg3_state', JSON.stringify({
+      stage: S.stage, trained: S.trained, birthTs: S.birthTs,
+      loss: S.loss, acc: S.acc, lr: S.lr, threats: S.threats,
+      evolutions: S.evolutions, researchRuns: S.researchRuns,
+      personality: S.personality,
+      reflections: S.reflections.slice(0, 10),
+      researchLog: S.researchLog.slice(0, 10),
+      memory: S.memory,
+      beliefs: S.beliefs.slice(0, 10),
+      triples: S.triples.slice(0, 20),
+      cogTicks: S.cogTicks,
+    }));
+  } catch (e) {}
+}
+
+// ── 16. INPUT HANDLING ────────────────────────────────────────────
+document.getElementById('inp').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+});
+document.getElementById('inp').addEventListener('input', function () {
+  this.style.height = '34px';
+  this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+});
+
+// ── 17. RESTORE SAVED VALUES ──────────────────────────────────────
+window.addEventListener('load', () => {
+  const savedBackend = localStorage.getItem('axg3_backend');
+  const savedKey = localStorage.getItem('axg3_apikey');
+  if (savedBackend) document.getElementById('backendUrlInput').value = savedBackend;
+  if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
+});
+document.getElementById('backendUrlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doInit();
+});
+document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doInit();
+});
+</script>
+</body>
+</html>
